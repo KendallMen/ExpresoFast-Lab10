@@ -141,14 +141,3 @@ Content-Type: application/json
 ```
 
 Valores válidos de `estado`: `PENDIENTE`, `EN_TRANSITO`, `ENTREGADO`, `CANCELADO`.
-
-## Notas de solución de problemas
-
-| Síntoma | Causa y solución |
-|---|---|
-| `NG2008: Could not find template file './app.html'` | El Angular CLI usado genera el componente raíz como `app.ts`/`app.html` (sin sufijo `.component`). Verifica que `templateUrl` en `app.ts` apunte al archivo que realmente existe en `src/app/`. |
-| La tabla se queda en "Cargando envíos…" indefinidamente, sin error visible | El proyecto es zoneless (sin `zone.js`). Confirma que el estado del componente (`envios`, `cargando`, `error`) esté declarado con `signal()` y se lea en el HTML como función (`envios()`), no como propiedad plana. |
-| Error en consola: `Cannot read properties of undefined (reading 'startTime')` | Proviene de la extensión del navegador **Angular DevTools**, no del código de la aplicación. Desactívala en `chrome://extensions` si genera ruido al depurar. |
-| Error de CORS en el navegador | Confirma que `EnvioController` tenga `@CrossOrigin(origins = "http://localhost:4200")` y que el frontend corra exactamente en ese puerto. |
-| `NullInjectorError: No provider for HttpClient!` | Falta `provideHttpClient(withFetch())` en el arreglo `providers` de `app.config.ts`. |
-| `Can't bind to 'ngModel'` | Falta importar `FormsModule` en el arreglo `imports` del componente standalone correspondiente. |
