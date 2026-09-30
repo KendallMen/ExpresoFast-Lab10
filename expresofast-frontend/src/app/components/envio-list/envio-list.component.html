@@ -1,0 +1,38 @@
+<section aria-labelledby="tituloEnvios">
+  <h2 id="tituloEnvios">Guías de envío</h2>
+
+  <p *ngIf="cargando()">Cargando envíos…</p>
+  <p *ngIf="error()" class="error-msg" role="alert">{{ error() }}</p>
+
+  <table *ngIf="!cargando() && envios().length > 0" class="tabla-envios">
+    <caption class="solo-lectores">Listado de guías de envío</caption>
+    <thead>
+      <tr>
+        <th scope="col">Rastreo</th>
+        <th scope="col">Destinatario</th>
+        <th scope="col">Dirección</th>
+        <th scope="col">Flete</th>
+        <th scope="col">Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let envio of envios()">
+        <td>{{ envio.codigoRastreo }}</td>
+        <td>{{ envio.destinatario }}</td>
+        <td>{{ envio.direccionDestino }}</td>
+        <td>₡{{ envio.montoFlete | number:'1.2-2' }}</td>
+        <td>
+          <span [class]="claseEstado(envio.estado)">{{ envio.estado }}</span>
+          <select
+            [ngModel]="envio.estado"
+            (ngModelChange)="onCambiarEstado(envio, $event)"
+            aria-label="Cambiar estado del envío {{ envio.codigoRastreo }}">
+            <option *ngFor="let estado of estados" [value]="estado">{{ estado }}</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p *ngIf="!cargando() && envios().length === 0 && !error()">No hay envíos registrados todavía.</p>
+</section>

@@ -1,0 +1,45 @@
+.solo-lectores {
+  position: absolute;
+  left: -9999px;
+}
+
+.error-msg {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.tabla-envios {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tabla-envios th,
+.tabla-envios td {
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tabla-envios thead {
+  background: #1e293b;
+  color: white;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: white;
+  margin-right: 0.5rem;
+}
+
+.badge-pendiente { background: #d97706; }
+.badge-en-transito { background: #2563eb; }
+.badge-entregado { background: #16a34a; }
+.badge-cancelado { background: #dc2626; }

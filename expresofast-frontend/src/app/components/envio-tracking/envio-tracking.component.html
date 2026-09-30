@@ -1,0 +1,32 @@
+<section aria-labelledby="tituloRastreo">
+  <h2 id="tituloRastreo">Rastrear guía</h2>
+
+  <form (ngSubmit)="buscar()" class="form-busqueda">
+    <label for="codigo">Código de rastreo
+      <input
+        type="text"
+        id="codigo"
+        name="codigo"
+        placeholder="Ej: EXP-2026-1001"
+        [(ngModel)]="codigo">
+    </label>
+    <button type="submit" [disabled]="buscando()">
+      {{ buscando() ? 'Buscando…' : 'Buscar' }}
+    </button>
+  </form>
+
+  <p *ngIf="error()" class="error-msg" role="alert">{{ error() }}</p>
+
+  <article *ngIf="envio() as envioActual" class="ficha-envio">
+    <h3>{{ envioActual.codigoRastreo }}</h3>
+    <p><strong>Destinatario:</strong> {{ envioActual.destinatario }}</p>
+    <p><strong>Dirección:</strong> {{ envioActual.direccionDestino }}</p>
+    <p><strong>Flete:</strong> ₡{{ envioActual.montoFlete | number:'1.2-2' }}</p>
+    <p><strong>Estado actual:</strong> {{ envioActual.estado }}</p>
+
+    <div class="barra-progreso" *ngIf="envioActual.estado !== 'CANCELADO'">
+      <div class="barra-progreso__relleno" [style.width.%]="porcentajeProgreso()"></div>
+    </div>
+    <p *ngIf="envioActual.estado === 'CANCELADO'" class="estado-cancelado">Este envío fue cancelado.</p>
+  </article>
+</section>

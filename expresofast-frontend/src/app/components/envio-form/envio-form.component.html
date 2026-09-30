@@ -1,0 +1,41 @@
+<section aria-labelledby="tituloForm">
+  <h2 id="tituloForm">Registrar nuevo envío</h2>
+
+  <form (ngSubmit)="onSubmit()" #formEnvio="ngForm" novalidate>
+    <label for="destinatario">Destinatario
+      <input
+        type="text"
+        id="destinatario"
+        name="destinatario"
+        [(ngModel)]="datos.destinatario"
+        required>
+    </label>
+
+    <label for="direccionDestino">Dirección de destino
+      <input
+        type="text"
+        id="direccionDestino"
+        name="direccionDestino"
+        [(ngModel)]="datos.direccionDestino"
+        required>
+    </label>
+
+    <label for="montoFlete">Monto de flete (₡)
+      <input
+        type="number"
+        id="montoFlete"
+        name="montoFlete"
+        min="1"
+        step="0.01"
+        [(ngModel)]="datos.montoFlete"
+        required>
+    </label>
+
+    <button type="submit" [disabled]="enviando()">
+      {{ enviando() ? 'Registrando…' : 'Registrar envío' }}
+    </button>
+
+    <p *ngIf="mensajeExito()" class="exito-msg" role="status">{{ mensajeExito() }}</p>
+    <p *ngIf="error()" class="error-msg" role="alert">{{ error() }}</p>
+  </form>
+</section>
