@@ -9,8 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.expresofast.dto.CrearEnvioDTO;
 import com.expresofast.dto.EnvioDTO;
-import com.expresofast.model.EstadoEnvio;
+import com.expresofast.dto.EnvioRegistroDTO;
 import com.expresofast.model.Envio;
+import com.expresofast.model.EstadoEnvio;
+import com.expresofast.model.Paquete;
 import com.expresofast.repository.EnvioRepository;
 
 @Service
@@ -74,4 +76,29 @@ public class EnvioServiceImpl implements EnvioService {
         } while (envioRepository.existsByCodigoRastreo(codigo));
         return codigo;
     }
+
+    @Override
+    @Transactional
+    public EnvioDTO registrarCompleto(EnvioRegistroDTO datos) {
+        if (envioRepository.existsByCodigoRastreo(datos.numeroTracking())) {
+            throw new IllegalArgumentException(
+                    "El número de rastreo " + datos.numeroTracking() + " ya está en uso");
+        }
+
+        Envio envio = new Envio(datos.numeroTracking(), datos.destinatario(),
+                datos.direccionDestino(), datos.montoFlete(), EstadoEnvio.PENDIENTE);
+        envio.setFechaDespacho(datos.fechaDespacho());
+        envio.setFechaEntregaEstimada(datos.fechaEntregaEstimada());
+        datos.paquetes().forEach(p ->
+                envio.agregarPaquete(new Paquete(p.descripcion(), p.pesoKg())));
+
+        return EnvioDTO.desde(envioRepository.save(envio));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existeNumeroTracking(String numeroTracking) {
+        return envioRepository.existsByCodigoRastreo(numeroTracking);
+    }
+
 }
