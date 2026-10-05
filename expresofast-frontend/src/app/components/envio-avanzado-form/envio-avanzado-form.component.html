@@ -1,0 +1,97 @@
+<section aria-labelledby="tituloAvanzado">
+  <h2 id="tituloAvanzado">Registrar envío con paquetes</h2>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+    <div class="campo">
+      <label for="numeroTracking">Número de rastreo</label>
+      <input
+        type="text"
+        id="numeroTracking"
+        formControlName="numeroTracking"
+        placeholder="Ej: EXP-2026-9001">
+
+      <p *ngIf="numeroTrackingControl.pending" class="hint-msg">Verificando disponibilidad…</p>
+      <p *ngIf="numeroTrackingControl.hasError('required') && numeroTrackingControl.touched" class="error-msg">
+        El número de rastreo es obligatorio.
+      </p>
+      <p *ngIf="numeroTrackingControl.hasError('trackingTomado')" class="error-msg" role="alert">
+        Este número de rastreo ya está en uso.
+      </p>
+    </div>
+
+    <div class="campo">
+      <label for="destinatario">Destinatario</label>
+      <input type="text" id="destinatario" formControlName="destinatario">
+    </div>
+
+    <div class="campo">
+      <label for="direccionDestino">Dirección de destino</label>
+      <input type="text" id="direccionDestino" formControlName="direccionDestino">
+    </div>
+
+    <div class="campo">
+      <label for="montoFlete">Monto de flete (₡)</label>
+      <input type="number" id="montoFlete" step="0.01" min="1" formControlName="montoFlete">
+    </div>
+
+    <div class="fila-fechas">
+      <div class="campo">
+        <label for="fechaDespacho">Fecha de despacho</label>
+        <input type="date" id="fechaDespacho" formControlName="fechaDespacho">
+      </div>
+
+      <div class="campo">
+        <label for="fechaEntregaEstimada">Fecha de entrega estimada</label>
+        <input type="date" id="fechaEntregaEstimada" formControlName="fechaEntregaEstimada">
+      </div>
+    </div>
+
+    <!-- Error de validacion CRUZADA (a nivel de FormGroup, no de un campo individual) -->
+    <p *ngIf="form.hasError('fechaInvalida') && form.touched" class="error-msg" role="alert">
+      La fecha de entrega estimada debe ser posterior a la fecha de despacho.
+    </p>
+
+    <fieldset formArrayName="paquetes" class="fieldset-paquetes">
+      <legend>Paquetes</legend>
+
+      <div
+        *ngFor="let paqueteForm of paquetesArray.controls; let i = index"
+        [formGroupName]="i"
+        class="fila-paquete">
+
+        <div class="campo">
+          <label [for]="'descripcion' + i">Descripción</label>
+          <input [id]="'descripcion' + i" type="text" formControlName="descripcion">
+        </div>
+
+        <div class="campo campo-peso">
+          <label [for]="'pesoKg' + i">Peso (kg)</label>
+          <input [id]="'pesoKg' + i" type="number" step="0.01" min="0.01" formControlName="pesoKg">
+        </div>
+
+        <button
+          type="button"
+          class="btn-eliminar"
+          (click)="eliminarPaquete(i)"
+          [disabled]="paquetesArray.length <= 1"
+          [attr.aria-label]="'Eliminar paquete ' + (i + 1)">
+          ✕
+        </button>
+      </div>
+    </fieldset>
+
+    <button type="button" class="btn-secundario" (click)="agregarPaquete()">
+      + Añadir paquete
+    </button>
+
+    <div class="acciones-form">
+      <button type="submit" [disabled]="form.invalid || form.pending || enviando()">
+        {{ enviando() ? 'Registrando…' : 'Registrar envío completo' }}
+      </button>
+    </div>
+
+    <p *ngIf="mensajeExito()" class="exito-msg" role="status">{{ mensajeExito() }}</p>
+    <p *ngIf="error()" class="error-msg" role="alert">{{ error() }}</p>
+  </form>
+</section>
