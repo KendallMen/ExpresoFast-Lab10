@@ -3,8 +3,6 @@ package com.expresofast.controller;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -21,8 +19,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.expresofast.dto.ActualizarEstadoDTO;
 import com.expresofast.dto.CrearEnvioDTO;
 import com.expresofast.dto.EnvioDTO;
+import com.expresofast.dto.EnvioRegistroDTO;
+import com.expresofast.dto.TrackingDisponibleDTO;
 import com.expresofast.service.EnvioNoEncontradoException;
 import com.expresofast.service.EnvioService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/envios")
@@ -51,6 +53,12 @@ public class EnvioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
+    @PostMapping("/completo")
+    public ResponseEntity<EnvioDTO> registrarCompleto(@Valid @RequestBody EnvioRegistroDTO datos) {
+        EnvioDTO creado = envioService.registrarCompleto(datos);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
+    }
+
     @PatchMapping("/{id}/estado")
     public EnvioDTO actualizarEstado(@PathVariable Long id, @Valid @RequestBody ActualizarEstadoDTO datos) {
         return envioService.actualizarEstado(id, datos.estado());
@@ -68,5 +76,11 @@ public class EnvioController {
         public ResponseEntity<Map<String, String>> manejarArgumentoInvalido(IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("mensaje", ex.getMessage()));
         }
+    }
+
+    @GetMapping("/check-tracking/{trackingNumber}")
+    public TrackingDisponibleDTO verificarTracking(@PathVariable String trackingNumber) {
+        boolean existe = envioService.existeNumeroTracking(trackingNumber);
+        return new TrackingDisponibleDTO(trackingNumber, existe);
     }
 }
