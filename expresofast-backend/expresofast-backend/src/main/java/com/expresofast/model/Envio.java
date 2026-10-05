@@ -1,7 +1,11 @@
 package com.expresofast.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,10 +13,12 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "envio")
+@Table(name = "ENVIOS")
 public class Envio {
 
     @Id
@@ -38,6 +44,16 @@ public class Envio {
     @Column(nullable = false)
     private LocalDateTime fechaCreacion;
 
+    @Column(name = "fecha_despacho")
+    private LocalDate fechaDespacho;
+
+    @Column(name = "fecha_entrega_estimada")
+    private LocalDate fechaEntregaEstimada;
+
+    @OneToMany(mappedBy = "envio", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderColumn(name = "orden_paquete")
+    private List<Paquete> paquetes = new ArrayList<>();
+
     public Envio() {
     }
 
@@ -49,6 +65,11 @@ public class Envio {
         this.montoFlete = montoFlete;
         this.estado = estado;
         this.fechaCreacion = LocalDateTime.now();
+    }
+
+    public void agregarPaquete(Paquete paquete) {
+        paquetes.add(paquete);
+        paquete.setEnvio(this);
     }
 
     public Long getId() { return id; }
@@ -65,4 +86,10 @@ public class Envio {
     public void setEstado(EstadoEnvio estado) { this.estado = estado; }
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
+    public LocalDate getFechaDespacho() { return fechaDespacho; }
+    public void setFechaDespacho(LocalDate fechaDespacho) { this.fechaDespacho = fechaDespacho; }
+    public LocalDate getFechaEntregaEstimada() { return fechaEntregaEstimada; }
+    public void setFechaEntregaEstimada(LocalDate fechaEntregaEstimada) { this.fechaEntregaEstimada = fechaEntregaEstimada; }
+    public List<Paquete> getPaquetes() { return paquetes; }
+    public void setPaquetes(List<Paquete> paquetes) { this.paquetes = paquetes; }
 }
