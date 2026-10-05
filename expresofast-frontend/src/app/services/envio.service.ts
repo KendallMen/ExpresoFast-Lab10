@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { CrearEnvioPayload, Envio, EstadoEnvio } from '../models/envio.model';
+import { EnvioRegistro, TrackingDisponible } from '../models/envio-registro.model';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +12,14 @@ import { CrearEnvioPayload, Envio, EstadoEnvio } from '../models/envio.model';
 export class EnvioService {
   private http = inject(HttpClient);
   private baseUrl = environment.apiUrl + 'envios';
+
+    checkTracking(numeroTracking: string): Observable<TrackingDisponible> {
+    return this.http.get<TrackingDisponible>(`${this.baseUrl}/check-tracking/${numeroTracking}`);
+  }
+
+  registrarEnvioCompleto(payload: EnvioRegistro): Observable<Envio> {
+    return this.http.post<Envio>(`${this.baseUrl}/completo`, payload);
+  }
 
   obtenerEnvios(): Observable<Envio[]> {
     return this.http.get<Envio[]>(this.baseUrl);
