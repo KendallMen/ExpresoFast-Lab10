@@ -141,3 +141,73 @@ Content-Type: application/json
 ```
 
 Valores válidos de `estado`: `PENDIENTE`, `EN_TRANSITO`, `ENTREGADO`, `CANCELADO`.
+
+
+### Nueva funcionalidad
+
+- **Relación 1:N Envio–Paquete**, mapeada con `@OneToMany`/`@ManyToOne` y
+  `cascade = ALL` + `orphanRemoval = true`, de forma que el envío y todos sus
+  paquetes se guardan (o se quitan) en una sola transacción
+  (`@Transactional` en `EnvioServiceImpl.registrarCompleto`).
+- **Endpoint nuevo:** `GET /api/v1/envios/check-tracking/{trackingNumber}`,
+  usado por el validador asíncrono de Angular.
+- **Endpoint nuevo:** `POST /api/v1/envios/completo`, recibe el envío junto
+  con la lista de paquetes (`EnvioRegistroDTO`).
+- **Componente Angular `EnvioAvanzadoFormComponent`** (ruta `/envio-avanzado`):
+  formulario reactivo **estrictamente tipado** (`NonNullableFormBuilder`),
+  con un `FormArray` dinámico de paquetes, validación cruzada de fechas y
+  validación asíncrona del número de rastreo.
+
+### Fundamentación teórica
+
+**1. UX y escalabilidad: `FormArray` vs. 10 campos estáticos ocultos**
+
+Usar 10 campos de texto estáticos y ocultos obliga a decidir de antemano un
+límite arbitrario de paquetes, y a manejar manualmente qué bloques están
+"activos" mostrando/ocultando elementos del DOM con lógica imperativa
+(clases CSS, `display: none`, banderas booleanas por cada bloque). Esto
+genera: (a) HTML repetido 10 veces que hay que mantener sincronizado si se
+agrega un campo nuevo al paquete; (b) validación manual campo por campo sin
+una fuente única de verdad sobre cuántos paquetes están realmente
+diligenciados; (c) un payload que hay que filtrar a mano antes de enviarlo al
+backend, descartando los bloques "vacíos".
+
+Un `FormArray` resuelve esto de raíz porque el **número de controles del
+arreglo es el mismo número de paquetes reales**: no hay bloques ocultos que
+filtrar, cada `FormGroup` del arreglo representa exactamente un paquete que
+el usuario decidió agregar. Angular re-renderiza el `*ngFor` automáticamente
+cuando se hace `push()` o `removeAt()`, sin que el desarrollador tenga que
+tocar el DOM directamente. Además, la validación se declara una sola vez (en
+`crearPaqueteForm()`) y se aplica igual a cualquier cantidad de paquetes,
+porque Angular agrega/retira esas reglas junto con cada control. Esto reduce
+el código a mantener, elimina una clase entera de bugs (desincronización
+entre "cuántos campos se ven" y "cuántos datos se envían") y escala sin
+cambios de código sin importar si el envío tiene 1 paquete o 50.
+
+**2. Event Loop: validador síncrono vs. asíncrono**
+
+El validador de fechas (`fechaEntregaPosteriorADespachoValidator`) es
+**síncrono** porque toda la información que necesita ya está disponible en
+memoria: los valores de `fechaDespacho` y `fechaEntregaEstimada` viven en el
+propio `FormGroup`. La función hace una comparación de objetos `Date` y
+retorna el resultado (`null` o `{ fechaInvalida: true }`) en la misma
+ejecución del *call stack*, sin ceder el control al Event Loop. Angular
+puede usar ese valor de inmediato para decidir el estado de `valid`/`invalid`
+del formulario.
+
+El validador de tracking (`trackingDisponibleValidator`), en cambio, depende
+de una respuesta del servidor a través de `HttpClient`, que internamente usa
+`fetch` (una *Web API* del navegador, no de JavaScript puro). Esa llamada no
+bloquea el hilo principal: se delega al navegador, y cuando la respuesta
+llega, el callback correspondiente se encola como una tarea (microtarea, en
+el caso de Promesas/Observables basados en ellas) que el Event Loop procesa
+**después** de que el call stack actual se vacíe. Mientras tanto, el
+`FormControl` queda en estado `PENDING`.
+
+Angular exige que un `AsyncValidatorFn` retorne un `Observable` o una
+`Promise` precisamente porque no puede antes cuánto tiempo
+tomará la respuesta, por lo que en vez de bloquear el hilo (lo que congelaría toda la
+interfaz mientras se espera al servidor), Angular se suscribe a ese
+Observable y actualiza el estado del control (`valid`/`invalid`) solo cuando
+la tarea finalmente se resuelve, de forma no bloqueante y
+coherente con el modelo de concurrencia de un único hilo que usa JavaScript.
