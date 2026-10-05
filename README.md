@@ -160,54 +160,35 @@ Valores válidos de `estado`: `PENDIENTE`, `EN_TRANSITO`, `ENTREGADO`, `CANCELAD
 
 ### Fundamentación teórica
 
-**1. UX y escalabilidad: `FormArray` vs. 10 campos estáticos ocultos**
+**1. UX y escalabilidad: `FormArray` vs. campos estáticos**
 
-Usar 10 campos de texto estáticos y ocultos obliga a decidir de antemano un
-límite arbitrario de paquetes, y a manejar manualmente qué bloques están
-"activos" mostrando/ocultando elementos del DOM con lógica imperativa
-(clases CSS, `display: none`, banderas booleanas por cada bloque). Esto
-genera: (a) HTML repetido 10 veces que hay que mantener sincronizado si se
-agrega un campo nuevo al paquete; (b) validación manual campo por campo sin
-una fuente única de verdad sobre cuántos paquetes están realmente
-diligenciados; (c) un payload que hay que filtrar a mano antes de enviarlo al
-backend, descartando los bloques "vacíos".
+FormArray permite agregar y eliminar paquetes según lo que el usuario
+necesite. Cada elemento del arreglo representa un paquete y utiliza las mismas
+reglas de validación para la descripción y el peso. Angular actualiza la vista
+cuando se agrega o elimina un elemento, por lo que el usuario no tiene que
+trabajar con diez campos visibles u ocultos ni con un límite fijo.
 
-Un `FormArray` resuelve esto de raíz porque el **número de controles del
-arreglo es el mismo número de paquetes reales**: no hay bloques ocultos que
-filtrar, cada `FormGroup` del arreglo representa exactamente un paquete que
-el usuario decidió agregar. Angular re-renderiza el `*ngFor` automáticamente
-cuando se hace `push()` o `removeAt()`, sin que el desarrollador tenga que
-tocar el DOM directamente. Además, la validación se declara una sola vez (en
-`crearPaqueteForm()`) y se aplica igual a cualquier cantidad de paquetes,
-porque Angular agrega/retira esas reglas junto con cada control. Esto reduce
-el código a mantener, elimina una clase entera de bugs (desincronización
-entre "cuántos campos se ven" y "cuántos datos se envían") y escala sin
-cambios de código sin importar si el envío tiene 1 paquete o 50.
+También mejora el mantenimiento del código. Con diez campos estáticos habría
+que repetir el HTML, validar cada campo por separado y filtrar manualmente los
+campos vacíos antes de enviar el formulario. Con FormArray, la cantidad de
+controles coincide con la cantidad de paquetes y todos se envían juntos en el
+JSON. Si después cambia la estructura de un paquete, la modificación se hace
+en un solo formulario y no en diez bloques repetidos.
 
-**2. Event Loop: validador síncrono vs. asíncrono**
+**2. Ciclo de eventos: validadores síncronos y asíncronos**
 
-El validador de fechas (`fechaEntregaPosteriorADespachoValidator`) es
-**síncrono** porque toda la información que necesita ya está disponible en
-memoria: los valores de `fechaDespacho` y `fechaEntregaEstimada` viven en el
-propio `FormGroup`. La función hace una comparación de objetos `Date` y
-retorna el resultado (`null` o `{ fechaInvalida: true }`) en la misma
-ejecución del *call stack*, sin ceder el control al Event Loop. Angular
-puede usar ese valor de inmediato para decidir el estado de `valid`/`invalid`
-del formulario.
+El validador de fechas es síncrono porque solo usa valores que ya están en el
+formulario. Su comparación se ejecuta directamente en el call stack y Angular
+recibe el resultado en ese mismo momento: el formulario queda válido o
+inválido sin esperar otra operación.
 
-El validador de tracking (`trackingDisponibleValidator`), en cambio, depende
-de una respuesta del servidor a través de `HttpClient`, que internamente usa
-`fetch` (una *Web API* del navegador, no de JavaScript puro). Esa llamada no
-bloquea el hilo principal: se delega al navegador, y cuando la respuesta
-llega, el callback correspondiente se encola como una tarea (microtarea, en
-el caso de Promesas/Observables basados en ellas) que el Event Loop procesa
-**después** de que el call stack actual se vacíe. Mientras tanto, el
-`FormControl` queda en estado `PENDING`.
+El validador de tracking es asíncrono porque debe hacer una petición HTTP al
+backend. La solicitud se procesa fuera del call stack y, cuando llega la
+respuesta, el navegador ejecuta el callback mediante el Event Loop. Mientras
+espera, Angular mantiene el control en estado PENDING.
 
-Angular exige que un `AsyncValidatorFn` retorne un `Observable` o una
-`Promise` precisamente porque no puede antes cuánto tiempo
-tomará la respuesta, por lo que en vez de bloquear el hilo (lo que congelaría toda la
-interfaz mientras se espera al servidor), Angular se suscribe a ese
-Observable y actualiza el estado del control (`valid`/`invalid`) solo cuando
-la tarea finalmente se resuelve, de forma no bloqueante y
-coherente con el modelo de concurrencia de un único hilo que usa JavaScript.
+Angular necesita que un validador asíncrono retorne un Observable o una
+Promise porque el resultado no está disponible de inmediato. Estos objetos
+representan una operación futura y permiten que Angular se suscriba, espere la
+respuesta y actualice el estado del control cuando la operación termine, sin
+bloquear la interfaz.
